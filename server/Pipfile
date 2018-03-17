@@ -1,0 +1,25 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[dev-packages]
+
+
+
+[packages]
+
+docker = "*"
+flask = "*"
+flask-jwt-extended = "*"
+flask-pymongo = "*"
+flask-bcrypt = "*"
+flask-cors = "*"
+python-nginx = "*"
+
+
+[requires]
+
+python_version = "2.7"
