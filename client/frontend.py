@@ -45,7 +45,7 @@ def main():
 	try:
 		config_file = open('config.json', 'r')
 	except:
-		print("Configuration file doesn't exists.")
+		click.secho("Configuration file doesn't exists.", fg='red')
 
 	try:
 		data = json.load(config_file)
@@ -73,7 +73,7 @@ def main():
 		operate(authToken, data)
 
 	except Exception as e:
-		print(e)    
+		click.secho(e, fg='red')    
 
 
 if __name__=="__main__":

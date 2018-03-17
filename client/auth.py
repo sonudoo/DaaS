@@ -15,23 +15,23 @@ def register(url):
 		data['password'] = getpass.getpass("Enter password: ")
 		password_check = getpass.getpass("Confirm password: ")
 		if(data['password'] != password_check):
-			click.secho("Passwords didn't match. Please try again..")
+			click.secho("Passwords didn't match. Please try again..", fg='red')
 		else:
 			try:
-				print("Registering..")
+				click.secho("Registering..", fg='green')
 				check = requests.post(serverAddress, json = data)
 			except Exception as e:
-				print("Connection Error: Make sure that the server is reachable..")
+				click.secho("Connection Error: Make sure that the server is reachable..", fg='red')
 
 			result = json.loads(check.text)
 			if(result['success']==False):	
-				print("Username already exists. Please try again..")
+				click.secho("Username already exists. Please try again..", fg='red')
 			else:
 				del data['password']
 				data['url'] = url
 				config_file = open('config.json', 'w')
 				config_file.write(json.dumps(data))
-				print("You have been successfully registered. Please login to the server now.")
+				click.secho("You have been successfully registered. Please login to the server now.", fg='green')
 				break
 
 
@@ -46,10 +46,10 @@ def login(url, username=""):
 			data['username'] = input('Username: ')
 			data['password'] = getpass.getpass("Password: ")
 			try:
-				print("Authenticating..")
+				click.secho("Authenticating..", fg='green')
 				token_req = requests.post(serverAddress, json = data)
 			except Exception as e:
-				print("Connection Error: Make sure that the server is reachable..")
+				click.secho("Connection Error: Make sure that the server is reachable..", fg='red')
 
 			result = json.loads(token_req.text)
 			if(result['success']):
@@ -59,20 +59,20 @@ def login(url, username=""):
 				config_file.write(json.dumps(data))
 				return result
 			else:
-				print('Username/Password incorrect. Please try again..')
+				click.secho('Username/Password incorrect. Please try again..', fg='red')
 		else:
 			click.secho('--Login Details--', fg='red', bg='yellow')
 			data['username'] = username
 			data['password'] = getpass.getpass("Enter Password: ")
 			try:
-				print("Authenticating..")
+				click.secho("Authenticating..", fg='green')
 				token_req = requests.post(serverAddress, json = data)
 			except Exception as e:
-				print("Connection Error: Make sure that the server is reachable..")
+				click.secho("Connection Error: Make sure that the server is reachable..", fg='red')
 			result = json.loads(token_req.text)
 			if(result["success"]):
 				return result
 			else:
-				print("Try again")
+				click.secho("Try again", fg='red')
 
 

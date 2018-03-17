@@ -13,120 +13,124 @@ def createContainer(authToken, url):
 			if(data['containerName']!=''):
 				break
 			else:
-				print('Container name cannot be empty! Try again..')
+				click.secho('Container name cannot be empty! Try again..', fg='red')
 
 		header['Authorization'] = authToken
 		
-		print("Choose a Container Image:\n1. Blank Ubuntu Container\n2. Ubuntu Container with Python installed\n3. Ubuntu Container with Node installed\n ")
+		click.secho("Choose a Container Image:\n1. Blank Ubuntu Container\n2. Ubuntu Container with Python installed\n3. Ubuntu Container with Node installed\n ")
 
 		while True:
 			data['containerImage'] = input()
 			if(int(data['containerImage']) >= 1 and int(data['containerImage']) <= 3):
 				break
 			else:
-				print('Invalid container image selected! Try again..')
+				click.secho('Invalid container image selected! Try again..', fg='red')
 
-		print("Choose a Container Type:\n1. Processor: 1 vCPU, Memory: 1 GB\n2.Processor: 2 vCPUs, Memory: 2 GB\n")
+		click.secho("Choose a Container Type:\n1. Processor: 1 vCPU, Memory: 1 GB\n2.Processor: 2 vCPUs, Memory: 2 GB\n")
 
 		while True:
 			data['containerType'] = input()
 			if(int(data['containerType']) >= 1 and int(data['containerType']) <= 2):
 				break
 			else:
-				print('Invalid container type selected! Try again..')
+				click.secho('Invalid container type selected! Try again..', fg='red')
 
 		try:
-			print("Please wait while your instance is being set up. This may take a minute or two.")
+			click.secho("Please wait while your instance is being set up. This may take a minute or two.", fg='green')
 			check = requests.post(serverAddress, json=data, headers=header)
 		except:
-			print("Something went wrong. Please try again later..")
+			click.secho("Something went wrong. Please try again later..", fg='red')
 			return
 
 		result = json.loads(check.text)
 
 		if(result['success']==False):	
-			print("Something went wrong. Please try again later..")
+			click.secho("Something went wrong. Please try again later..", fg='red')
 		else:
-			print('Your container has been successfully created. Please use SSH to login to the server.')
-			print(result['ssh'])
+			click.secho('Your container has been successfully created. Please use SSH to login to the server.', fg='green')
+			click.secho(result['ssh'])
 			print()
 			return
 
 def listContainers(authToken, url):
-	serverAddress = url+"getUserContainers"
-	header = dict()
-	header['Authorization'] = authToken
-	try:
-		check = requests.get(serverAddress, headers=header)
-	except:
-		print("Connection Error: Make sure that the server is reachable..\n")
-		return
+        serverAddress = url+"getUserContainers"
+        header = dict()
+        header['Authorization'] = authToken
+        try:
+                check = requests.get(serverAddress, headers=header)
+        except:
+                click.secho("Connection Error: Make sure that the server is reachable..\n", fg='red')
+                return
 
-	result = json.loads(check.text)
+        result = json.loads(check.text)
 
-	print("Your Container(s) list:\n")
+        click.secho("Your Container(s) list:\n")
 
-	print("ContainerID\tName\tStatus")
+        click.secho("ContainerID\tName\tStatus")
 	
-	idx = 1
-	for i in result:
-		print("\t"+str(idx)+"\t"+i['name']+"\t"+i['status'].upper())
-		idx += 1
-	print()
+        idx = 1
+        for i in result:
+                if i['status'].upper() == 'RUNNING':
+                        click.secho("\t"+str(idx)+"\t"+i['name']+"\t"+i['status'].upper(), fg='green')
+                else:
+                        click.secho("\t"+str(idx)+"\t"+i['name']+"\t"+i['status'].upper(), fg='red')
+                        
+                idx += 1
+        print()
 
 def stopContainer(authToken, url):
 
-	serverAddress = url+"getUserContainers"
-	header = dict()
-	header['Authorization'] = authToken
+        serverAddress = url+"getUserContainers"
+        header = dict()
+        header['Authorization'] = authToken
 
-	try:
-		check = requests.get(serverAddress, headers=header)
-	except:
-		print("Connection Error: Make sure that the server is reachable..\n")
-		return
+        try:
+                check = requests.get(serverAddress, headers=header)
+        except:
+                click.secho("Connection Error: Make sure that the server is reachable..\n", fg='red')
+                return
 
-	result = json.loads(check.text)
+        result = json.loads(check.text)
 
-	print("ContainerID\tName\tStatus")
+        click.secho("ContainerID\tName\tStatus")
 
-	idx = 1
+        idx = 1
 
-	mp = {}
+        mp = {}
 
-	for i in result:
-		if(i['status'] == "running"):
-			mp[idx] = i['id']
-			print("\t"+str(idx)+"\t"+i['name']+"\t"+i['status'].upper())
-			idx += 1
+        for i in result:
+                if(i['status'] == "running"):
+                        mp[idx] = i['id']
+                        click.secho("\t"+str(idx)+"\t"+i['name']+"\t"+i['status'].upper())
+                        idx += 1
 
-	idx -= 1
-	if(idx == 0):
-		print("No containers available to stop\n")
-		return
+        idx -= 1
+        if(idx == 0):
+                click.secho("No containers available to stop\n", fg='red')
+                return
 
-	i = -1
-	while True:
-		print("Enter the ID of the Container to stop: ")
-		i = input()
-		if(int(i)<=0 or int(i)>idx):
-			print("Try again..")
-		else:
-			break
+        i = -1
+        while True:
+                click.secho("Enter the ID of the Container to stop: ")
+                i = input()
+                if(int(i)<=0 or int(i)>idx):
+                        click.secho("Try again..", fg='red')
+                else:
+                        break
 
-	data = dict()
-	data['containerId'] = mp[int(i)]
-	serverAddress = url+"stopContainer"
-	try:
-		check = requests.post(serverAddress, headers=header, json=data)
-		result = json.loads(check.text)
-		if(result['success']):
-			print("The selected container has been successfully stopped..\n")
-		else:
-			print("Something went wrong. Please try again later..\n")
-	except:
-		print("Connection Error: Make sure that the server is reachable..\n")
-		return
+        data = dict()
+        data['containerId'] = mp[int(i)]
+        serverAddress = url+"stopContainer"
+        try:
+                check = requests.post(serverAddress, headers=header, json=data)
+                result = json.loads(check.text)
+                if(result['success']):
+                        click.secho("The selected container has been successfully stopped..\n", fg='green')
+                else:
+                        click.secho("Something went wrong. Please try again later..\n", fg='red')
+        except:
+                click.secho("Connection Error: Make sure that the server is reachable..\n", fg='red')
+                return
 
 
 
@@ -140,13 +144,13 @@ def startContainer(authToken, url):
 	try:
 		check = requests.get(serverAddress, headers=header)
 	except:
-		print("Connection Error: Make sure that the server is reachable..\n")
+		click.secho("Connection Error: Make sure that the server is reachable..\n", fg='red')
 		return
 
 	result = json.loads(check.text)
 
-	print("Select the Container to stop:\n")
-	print("ContainerID\tName\tStatus")
+	click.secho("Select the Container to stop:\n")
+	click.secho("ContainerID\tName\tStatus")
 
 	idx = 1
 
@@ -155,21 +159,21 @@ def startContainer(authToken, url):
 	for i in result:
 		if(i['status'] == "exited"):
 			mp[idx] = i['id']
-			print("\t"+str(idx)+"\t"+i['name']+"\t"+i['status'].upper())
+			click.secho("\t"+str(idx)+"\t"+i['name']+"\t"+i['status'].upper())
 			idx += 1
 
 	idx -= 1
 
 	if(idx == 0):
-		print("All containers are already started.. No containers available to start..\n")
+		click.secho("All containers are already started.. No containers available to start..\n", fg='red')
 		return
 
 	i = -1
 	while True:
-		print("Enter the ID of the Container to start: ")
+		click.secho("Enter the ID of the Container to start: ")
 		i = input()
 		if(int(i)<=0 or int(i)>idx):
-			print("Try again..")
+			click.secho("Try again..", fg='red')
 		else:
 			break
 
@@ -180,11 +184,11 @@ def startContainer(authToken, url):
 		check = requests.post(serverAddress, headers=header, json=data)
 		result = json.loads(check.text)
 		if(result['success']):
-			print("The selected container has been successfully started..\n")
+			click.secho("The selected container has been successfully started..\n", fg='green')
 		else:
-			print("Something went wrong. Please try again later..\n")
+			click.secho("Something went wrong. Please try again later..\n", fg='red')
 	except:
-		print("Connection Error: Make sure that the server is reachable..\n")
+		click.secho("Connection Error: Make sure that the server is reachable..\n", fg='red')
 		return
 
 

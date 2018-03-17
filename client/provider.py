@@ -1,51 +1,34 @@
-import requests, json, click
+import requests, json, click, multiprocessing, os
 
 def registerAsProvider(authToken, url):
-	serverAddress = url+"createContainer"
+	serverAddress = url+"registerHoster"
 	data = dict()
-	header = dict()
 	while True:
-		click.secho("Choose the container name: ")
-		while True:
-			data['containerName'] = input()
-			if(data['containerName']!=''):
-				break
-			else:
-				print('Container name cannot be empty! Try again..')
-
-		header['Authorization'] = authToken
-		
-		print("Choose a Container Image:\n1. Blank Ubuntu Container\n2. Ubuntu Container with Python installed:\n3. Ubuntu Container with Node installed:\n ")
-
-		while True:
-			data['containerImage'] = input()
-			if(int(data['containerImage']) >= 1 and int(data['containerImage']) <= 3):
-				break
-			else:
-				print('Invalid container image selected! Try again..')
-
-		print("Choose a Container Type:\n1. 1 GB RAM")
-
-		while True:
-			data['containerType'] = input()
-			if(int(data['containerType']) >= 1 and int(data['containerType']) <= 2):
-				break
-			else:
-				print('Invalid container type selected! Try again..')
-
-		try:
-			print("Please wait while your instance is being set up. This may take a minute or two..")
-			check = requests.post(serverAddress, json=data, headers=header)
-		except:
-			print("Something went wrong. Please try again later..")
-			return
-
-		result = json.loads(check.text)
-
-		if(result['success']==False):	
-			print("Something went wrong. Please try again later..")
+		print("There are two types of instances:\n1. 1 vCPUs, 1 GB RAM\n2. 2 vCPUs, 2 GB RAM\n")
+		print("Enter number of instances of first type that you are ready to allot: ")
+		type1 = input()
+		print("Enter number of instances of second type that you are ready to allot: ")
+		type2 = input()
+		mem_usage = int(type1)+int(type2)*2
+		mem_avail = (os.sysconf('SC_PAGE_SIZE')*os.sysconf('SC_PHYS_PAGES'))/(1024**3)
+		processor_usage = int(type1)+int(type2)*2
+		processor_avail = multiprocessing.cpu_count()
+		if(mem_avail < mem_usage or processor_avail < processor_usage):
+			print("Selected configuration surpasses the system available resources. Try again..")
 		else:
-			print('Your container has been successfully created. Please use SSH to login to the server.')
-			print(result['ssh'])
-			print()
-			return
+			data['type1'] = type1
+			data['type2'] = type2
+			break
+	
+	try:
+		header = dict()
+		header['Authorization'] = authToken
+		check = requests.post(serverAddress, headers=header, json=data)
+		result = json.loads(check.text)
+		if(result['success']):
+			print('Congratulations! You have sucessfully been registered as a Hoster.\n')
+		else:
+			print('You are already registered as a Hoster.\n')
+	except:
+		click.secho("Connection Error: Make sure that the server is reachable..\n", fg='red')
+		return
