@@ -31,5 +31,4 @@ def registerAsProvider(authToken, url):
 			print('You are already registered as a Hoster.\n')
 	except:
 		click.secho("Connection Error: Make sure that the server is reachable..\n", fg='red')
-		returnclick.secho("Connection Error: Make sure that the server is reachable..\n", fg='red')
-	return
+		return
