@@ -17,7 +17,7 @@ CORS(app)
 
 #mongo.init_app(app)
 jwt = JWTManager(app)
-bcrypt.init_app(app)
+#bcrypt.init_app(app)
 
 sudoPassword = getpass.getpass()
 
@@ -27,7 +27,7 @@ def createContainer():
     password = request.json['password']
     containerImage = request.json['containerImage']
     containerType = request.json['containerType']
-    buildImage(username, password, containerImage)
+    print(buildImage(username, password, containerImage))
     container = runContainer(username, password, request.json['containerName'], sudoPassword, containerImage, containerType)
 
     print(container)
