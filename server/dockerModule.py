@@ -37,6 +37,7 @@ def runContainer(username, password, containerName, sudoPassword, containerImage
             mem_limit=ram
         )
     except Exception as error:
+        print error
         return {
             'success': False,
             'error': str(error)
