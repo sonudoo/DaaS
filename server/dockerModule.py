@@ -6,21 +6,26 @@ from flask import jsonify
 client = docker.from_env()
 apiClient = docker.APIClient(base_url='unix://var/run/docker.sock')
 dockerFilePath = "./"
-containerType = 'python'
 
-def buildImage(username, password, containerType):
+def buildImage(username, password, containerImage):
 
-    ubuntuDockerFileText = images.images[containerType] % password
+    ubuntuDockerFileText = images.images[containerImage] % password
     dockerFile = open('Dockerfile', 'w')
     dockerFile.write(ubuntuDockerFileText.encode('utf8'))
     dockerFile.close()
-    return client.images.build(path=dockerFilePath, tag="%s/ubuntu:%s" % (username, containerType))
+    return client.images.build(path=dockerFilePath, tag="%s/ubuntu:%s" % (username, containerImage))
 
 
-def runContainer(username, password, containerName, sudoPassword, containerType):
+def runContainer(username, password, containerName, sudoPassword, containerImage, containerType):
+    if containerType == '1':
+        cpu = 1
+        ram = '1g'
+    else:
+        cpu = 2
+        ram = '2g'
     try:
         createdContainer =  client.containers.run(
-            "%s/ubuntu:%s" % (username, containerType),
+            "%s/ubuntu:%s" % (username, containerImage),
             name=username+containerName,
             detach=True,
             ports={
@@ -28,6 +33,8 @@ def runContainer(username, password, containerName, sudoPassword, containerType)
                 '80/tcp': None
             },
             tty=True,
+            cpu_count=cpu,
+            mem_limit=ram
         )
     except Exception as error:
         return {
@@ -66,5 +73,31 @@ def runContainer(username, password, containerName, sudoPassword, containerType)
         'id': createdContainer.id
     }
 
+def stopDockerContainer(containerId):
+    try:
+        container = client.containers.get(containerId)
+        container.stop();
+        return {
+            "success": True
+        }
+    except Exception as e:
+        print e
+        return {
+            "success": False
+        }
 
+def startDockerContainer(containerId):
+    try:
+        container = client.containers.get(containerId)
+        container.start();
+        return {
+            "success": True
+        }
+    except Exception as e:
+        print e
+        return {
+            "success": False
+        }
 
+def getStatus(id):
+    return client.containers.get(id).status

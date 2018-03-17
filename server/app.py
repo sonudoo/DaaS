@@ -4,7 +4,7 @@ from flask_bcrypt import Bcrypt
 from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, get_jwt_claims
 from flask_cors import CORS
-from dockerModule import buildImage, runContainer
+from dockerModule import buildImage, runContainer, stopDockerContainer, getStatus, startDockerContainer
 import getpass
 
 app = Flask(__name__)
@@ -22,7 +22,6 @@ sudoPassword = getpass.getpass()
 
 @app.route("/login", methods=['POST'])
 def login():
-    print "sdkjfn"
     try:
         username = request.json['username']
         password = request.json['password']
@@ -62,9 +61,10 @@ def createContainer():
     username = get_jwt_identity()
     userCollection = mongo.db.users
     password = userCollection.find_one({'username': username})['password']
+    containerImage = request.json['containerImage']
     containerType = request.json['containerType']
-    print buildImage(username, password, containerType)
-    container = runContainer(username, password, request.json['containerName'], sudoPassword, containerType)
+    print buildImage(username, password, containerImage)
+    container = runContainer(username, password, request.json['containerName'], sudoPassword, containerImage, containerType)
     print container
     if container['success']:
         try:
@@ -89,13 +89,73 @@ def createContainer():
     else:
         return jsonify(container)
 
+@app.route('/stopContainer', methods=['POST'])
+@jwt_required
+def stopContainer():
+    username = get_jwt_identity()
+    containerId = request.json['containerId']
+    containerCollection = mongo.db.containers
+    query = containerCollection.find_one({'username': username, 'id': containerId})
+    if query:
+        result = stopDockerContainer(containerId)
+        if result["success"]:
+            return jsonify({
+                "success": True,
+                "msg": 'Successfully stopped container %s' % query['name']
+            })
+        else:
+             return jsonify({
+                "success": False,
+                "msg": 'Somthing went wrong'
+            })
+    else:
+        return jsonify({
+            "success": False,
+            "msg": 'Container not found!'
+        })
+
+@app.route('/startContainer', methods=['POST'])
+@jwt_required
+def startContainer():
+    username = get_jwt_identity()
+    containerId = request.json['containerId']
+    containerCollection = mongo.db.containers
+    query = containerCollection.find_one({'username': username, 'id': containerId})
+    if query:
+        result = startDockerContainer(containerId)
+        if result["success"]:
+            return jsonify({
+                "success": True,
+                "msg": 'Successfully started container %s' % query['name']
+            })
+        else:
+             return jsonify({
+                "success": False,
+                "msg": 'Somthing went wrong'
+            })
+    else:
+        return jsonify({
+            "success": False,
+            "msg": 'Container not found!'
+        })
+
+
+
 @app.route('/getUserContainers')
 @jwt_required
 def getUserContainers():
     username = get_jwt_identity()
     containerCollection = mongo.db.containers
     containerList = containerCollection.find({'username': username})
-    return dumps(containerList)
+    userContainers = [];
+    for item in containerList:
+        containerStatus = getStatus(item['id'])
+        userContainers.append({
+            "name": item['name'],
+            "id": item['id'],
+            "status": containerStatus
+        })
+    return jsonify(userContainers)
 
 
 if __name__ == '__main__':
