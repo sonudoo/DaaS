@@ -6,11 +6,16 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 from flask_cors import CORS
 from dockerModule import buildImage, runContainer, stopDockerContainer, getStatus, startDockerContainer
 import getpass
+import requests
+import socket
+import json
+import os, sys
 
 app = Flask(__name__)
 app.config.from_pyfile('config.cfg')
 mongo = PyMongo()
 bcrypt = Bcrypt()
+serverIp = '192.168.43.93'
 
 CORS(app)
 
@@ -63,21 +68,82 @@ def createContainer():
     password = userCollection.find_one({'username': username})['password']
     containerImage = request.json['containerImage']
     containerType = request.json['containerType']
+    hostsCollection = mongo.db.hosts
+    hostsList = hostsCollection.find({})
+
+
+    for host in hostsList:
+        if containerType == '1':
+            if int(host['type1']) > 0:
+                hostsCollection.update_one({"_id": host["_id"]}, {"$set": {"type1": int(host['type1']) - 1}})
+            elif int(host['type2']) > 0:
+                hostsCollection.update_one({"_id": host["_id"]}, {"$set": {"type2": int(host['type1']) - 1}})
+            postData = {
+                "username": username,
+                "containerName": request.json['containerName'],
+                "containerImage": request.json['containerImage'],
+                "containerType": request.json['containerType'],
+                "password": password
+            }
+            address = 'http://'+host['ip']+':3000/createContainer'
+            print address
+            try:
+                port = requests.post(address, json=postData)
+            except Exception as e:
+                print e
+            print port.text
+            result = json.loads(port.text)
+            if result['success']:
+                containerCollection = mongo.db.containers
+                containerCollection.insert({
+                    "id": result['containerId'],
+                    "ip": host['ip'],
+                    "name": request.json['containerName'],
+                    "username": username
+                })
+                ngnixFile = open('/etc/nginx/sites-available/default', 'r+')
+                ngnixFileLines = ngnixFile.readlines()
+                ngnixFileLines = ngnixFileLines[:-1]
+                newLocation = [
+                    '\tlocation /%s/%s {\n' % (username, request.json['containerName'],),
+                    '\t\tproxy_pass http://%s:%s/;\n' % (host['ip'], result['port80']),
+                    '\t\tproxy_http_version 1.1;\n',
+                    '\t\tproxy_set_header Upgrade $http_upgrade;\n',
+                    "\t\tproxy_set_header Connection 'upgrade';\n",
+                    '\t\tproxy_set_header Host $host;\n',
+                    '\t\tproxy_cache_bypass $http_upgrade;\n',
+                '\t}\n',
+                '}'
+                ]
+                ngnixFileLines = ngnixFileLines + newLocation
+                ngnixFile.seek(0)
+                ngnixFile.writelines(ngnixFileLines)
+                ngnixFile.truncate()
+                ngnixFile.close()
+                command = 'sudo nginx -s reload'
+                print os.system('echo %s|sudo -S %s' % (sudoPassword, command))
+                return jsonify({
+                    'success': True,
+                    'ssh': 'ssh -p ' + result['port22'] + ' root@%s' % host['ip']
+                })
+            else: 
+                continue
+
     print buildImage(username, password, containerImage)
     container = runContainer(username, password, request.json['containerName'], sudoPassword, containerImage, containerType)
-    print container
     if container['success']:
         try:
             containerCollection = mongo.db.containers
             containerCollection.insert({
                 "id": container['id'],
+                "ip": serverIp,
                 "name": request.json['containerName'],
                 "username": username
             })
 
             return jsonify({
                 'success': True,
-                'ssh': 'ssh -p ' + container['port22'] + ' root@192.168.43.93'
+                'ssh': 'ssh -p ' + container['port22'] + ' root@%s' %serverIp
             })
 
         except Exception as e:
@@ -157,6 +223,37 @@ def getUserContainers():
         })
     return jsonify(userContainers)
 
+@app.route('/registerHoster', methods=['POST'])
+@jwt_required
+def registerHoster():
+    username = get_jwt_identity()
+    hostsCollection = mongo.db.hosts
+    host = hostsCollection.find_one({"username": username})
+    if host:
+        return jsonify({
+            "success": False,
+            "msg": "User already registered"
+        })
+    else:
+        try: 
+            hostsCollection.insert({
+                "username": username,
+                "ip": request.remote_addr,
+                "type1": request.json['type1'],
+                "type2": request.json['type2']
+            })
+            return jsonify({
+                "success": True,
+                "msg": "Successfully registed user"
+            })
+        except Exception as e:
+            print e
+            return jsonify({
+                "success": False,
+                "msg": "Something went wrong"
+            })
+
+
 
 if __name__ == '__main__':
-    app.run(host = '192.168.43.93', port=3000, debug = True)
+    app.run(host = serverIp, port=3000, debug = True, threaded=True)
