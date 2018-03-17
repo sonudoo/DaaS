@@ -55,7 +55,7 @@ def main():
 		authToken = login_result['token']
 		operate(authToken, data)
 	except Exception as e:
-		print("Configuration file doesn't exists.")
+		click.secho("Configuration file doesn't exists.", fg='red')
 	    
 
 

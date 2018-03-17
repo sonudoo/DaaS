@@ -7,13 +7,13 @@ def createContainer(authToken, url):
 	data = dict()
 	header = dict()
 	while True:
-		click.secho("Choose the container name: ")
+		click.secho("Choose the container name: ", fg='green')
 		while True:
 			data['containerName'] = input()
 			if(data['containerName']!=''):
 				break
 			else:
-				print('Container name cannot be empty! Try again..')
+				click.secho('Container name cannot be empty! Try again..', fg='red')
 
 		header['Authorization'] = authToken
 		print("Choose a container type:\n1. Blank Container\n2. Python Container: ")
@@ -23,21 +23,21 @@ def createContainer(authToken, url):
 			if(data['containerType']=="1" or data['containerType']=="2"):
 				break
 			else:
-				print('Invalid container type! Try again..')
+				click.secho('Invalid container type! Try again..', fg='red')
 
 		try:
-			print("Please wait while your instance is being set up. This may take a minute or two.")
+			click.secho("Please wait while your instance is being set up. This may take a minute or two.", fg='green')
 			check = requests.post(serverAddress, json=data, headers=header)
 		except:
-			print("Something went wrong. Please try again later..")
+			click.secho("Something went wrong. Please try again later..", fg='red')
 			return
 
 		result = json.loads(check.text)
 
 		if(result['success']==False):	
-			print("Something went wrong. Please try again later..")
+			click.secho("Something went wrong. Please try again later..", fg='red')
 		else:
-			print('Your container has been successfully created. Please use SSH to login to the server.')
+			click.secho('Your container has been successfully created. Please use SSH to login to the server.', fg='green')
 			print(result['ssh'])
 			print()
 			return
