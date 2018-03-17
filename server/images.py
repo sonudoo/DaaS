@@ -30,7 +30,7 @@ images = {
     RUN apt-get update -y
     RUN apt-get upgrade -y
     RUN apt-get install -y openssh-server
-    RUN apt-get install nodejs -y && apt-get install nodejs-legacy -y && apt-get install npm -y
+    RUN apt-get install nodejs -y
     RUN mkdir /var/run/sshd
     RUN echo 'root:%s' | chpasswd
     RUN sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
