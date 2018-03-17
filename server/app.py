@@ -163,17 +163,35 @@ def stopContainer():
     containerCollection = mongo.db.containers
     query = containerCollection.find_one({'username': username, 'id': containerId})
     if query:
-        result = stopDockerContainer(containerId)
-        if result["success"]:
-            return jsonify({
-                "success": True,
-                "msg": 'Successfully stopped container %s' % query['name']
-            })
+        if query['ip'] == serverIp:
+            result = stopDockerContainer(containerId)
+            if result["success"]:
+                return jsonify({
+                    "success": True,
+                    "msg": 'Successfully stopped container %s' % query['name']
+                })
+            else:
+                return jsonify({
+                    "success": False,
+                    "msg": 'Somthing went wrong'
+                })
         else:
-             return jsonify({
-                "success": False,
-                "msg": 'Somthing went wrong'
-            })
+            postData = {
+                "containerId": containerId
+            }
+            result = requests.post('http://'+query['ip']+':3000/stopContainer', json=postData)
+            print result.text
+            result = json.loads(result.text)
+            if result['success']:
+                return jsonify({
+                    "success": True,
+                    "msg": 'Successfully stopped container %s' % query['name']
+                })
+            else:
+                return jsonify({
+                    "success": False,
+                    "msg": 'Somthing went wrong'
+                })
     else:
         return jsonify({
             "success": False,
@@ -188,17 +206,35 @@ def startContainer():
     containerCollection = mongo.db.containers
     query = containerCollection.find_one({'username': username, 'id': containerId})
     if query:
-        result = startDockerContainer(containerId)
-        if result["success"]:
-            return jsonify({
-                "success": True,
-                "msg": 'Successfully started container %s' % query['name']
-            })
+        if query['ip'] == serverIp:
+            result = startDockerContainer(containerId)
+            if result["success"]:
+                return jsonify({
+                    "success": True,
+                    "msg": 'Successfully stopped container %s' % query['name']
+                })
+            else:
+                return jsonify({
+                    "success": False,
+                    "msg": 'Somthing went wrong'
+                })
         else:
-             return jsonify({
-                "success": False,
-                "msg": 'Somthing went wrong'
-            })
+            postData = {
+                "containerId": containerId
+            }
+            result = requests.post('http://'+query['ip']+':3000/startContainer', json=postData)
+            print result.text
+            result = json.loads(result.text)
+            if result['success']:
+                return jsonify({
+                    "success": True,
+                    "msg": 'Successfully stopped container %s' % query['name']
+                })
+            else:
+                return jsonify({
+                    "success": False,
+                    "msg": 'Somthing went wrong'
+                })
     else:
         return jsonify({
             "success": False,
@@ -215,12 +251,25 @@ def getUserContainers():
     containerList = containerCollection.find({'username': username})
     userContainers = [];
     for item in containerList:
-        containerStatus = getStatus(item['id'])
-        userContainers.append({
-            "name": item['name'],
-            "id": item['id'],
-            "status": containerStatus
-        })
+        if item['ip'] == serverIp:
+            containerStatus = getStatus(item['id'])
+            userContainers.append({
+                "name": item['name'],
+                "id": item['id'],
+                "status": containerStatus
+            })
+        else:
+            postData = {
+                "containerId": item['id']
+            }
+            result = requests.post('http://'+item['ip']+':3000/getContainerStatus', json=postData)
+            result = json.loads(result.text)
+            if result['success']:
+                userContainers.append({
+                "name": item['name'],
+                "id": item['id'],
+                "status": result['status']
+                });
     return jsonify(userContainers)
 
 @app.route('/registerHoster', methods=['POST'])
