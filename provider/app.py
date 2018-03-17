@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
-from flask_pymongo import PyMongo
+#from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
-from bson.json_util import dumps
+#from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, get_jwt_claims
 from flask_cors import CORS
 from dockerModule import buildImage, runContainer, stopDockerContainer, getStatus, startDockerContainer
@@ -10,12 +10,12 @@ import socket
 
 app = Flask(__name__)
 app.config.from_pyfile('config.cfg')
-mongo = PyMongo()
-bcrypt = Bcrypt()
+#mongo = PyMongo()
+#bcrypt = Bcrypt()
 
 CORS(app)
 
-mongo.init_app(app)
+#mongo.init_app(app)
 jwt = JWTManager(app)
 bcrypt.init_app(app)
 
@@ -23,12 +23,11 @@ sudoPassword = getpass.getpass()
 
 @app.route('/createContainer', methods = ['POST'])
 def createContainer():
-    print("I am here")
     username = request.json['username']
     password = request.json['password']
     containerImage = request.json['containerImage']
     containerType = request.json['containerType']
-    print(username, password, containerType, containerImage)
+    buildImage(username, password, containerImage)
     container = runContainer(username, password, request.json['containerName'], sudoPassword, containerImage, containerType)
 
     print(container)
