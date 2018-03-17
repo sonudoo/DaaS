@@ -25,8 +25,8 @@ def runContainer(username, password, containerName, sudoPassword, containerImage
         ram = '2g'
     try:
         createdContainer =  client.containers.run(
-            #"%s/ubuntu:%s" % (username, containerImage),
-            "sus-blank:latest",
+            "%s/ubuntu:%s" % (username, containerImage),
+            #"sus-blank:latest",
             name=username+containerName,
             detach=True,
             ports={
