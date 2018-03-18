@@ -4,6 +4,7 @@ import click
 from auth import login,register
 from container import createContainer,listContainers, startContainer, stopContainer
 from provider import registerAsProvider
+from database import createNewDatabase
 import getpass
 import inquirer
     
@@ -15,7 +16,7 @@ def operate(authToken, data):
 		questions = [
 		  	inquirer.List('choice',
 				message="Options",
-				choices=['Create a new Container', 'Start a Container', 'Stop a Container', 'List my Containers', 'Register as a provider', 'EXIT'],
+				choices=['Create a new Container', 'Start a Container', 'Stop a Container', 'List my Containers', 'Register as a provider', 'Create a new Database', 'EXIT'],
 			),
 		]
 		answer = inquirer.prompt(questions)
@@ -35,6 +36,9 @@ def operate(authToken, data):
 		elif(answer['choice'] == "Register as a provider"):
 			registerAsProvider(authToken, url)
 
+		elif(answer['choice'] == "Create a new Database"):
+			createNewDatabase(authToken, url)
+			
 		else:
 			break
      
