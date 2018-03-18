@@ -5,6 +5,7 @@ from bson.json_util import dumps
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, get_jwt_claims
 from flask_cors import CORS
 from dockerModule import buildImage, runContainer, stopDockerContainer, getStatus, startDockerContainer
+from userCreation import createUser
 import getpass
 import requests
 import socket
@@ -19,7 +20,11 @@ serverIp = '192.168.43.93'
 
 CORS(app)
 
-mongo.init_app(app)
+try:
+    mongo.init_app(app)
+except Exception as e:
+    print e
+
 jwt = JWTManager(app)
 bcrypt.init_app(app)
 
@@ -72,12 +77,8 @@ def createContainer():
     hostsList = hostsCollection.find({})
 
 
-    for host in hostsList:
-        if containerType == '1':
-            if int(host['type1']) > 0:
-                hostsCollection.update_one({"_id": host["_id"]}, {"$set": {"type1": int(host['type1']) - 1}})
-            elif int(host['type2']) > 0:
-                hostsCollection.update_one({"_id": host["_id"]}, {"$set": {"type2": int(host['type1']) - 1}})
+    for host in hostsList: 
+        if (containerType == '1' and int(host['type1']) > 0) or (containerType == '2' and int(host['type2']) > 0):
             postData = {
                 "username": username,
                 "containerName": request.json['containerName'],
@@ -122,10 +123,17 @@ def createContainer():
                 ngnixFile.close()
                 command = 'sudo nginx -s reload'
                 print os.system('echo %s|sudo -S %s' % (sudoPassword, command))
+            
+                if int(host['type1']) > 0:
+                    hostsCollection.update_one({"_id": host["_id"]}, {"$set": {"type1": int(host['type1']) - 1}})
+                elif int(host['type2']) > 0:
+                    hostsCollection.update_one({"_id": host["_id"]}, {"$set": {"type2": int(host['type1']) - 1}})
+                
                 return jsonify({
-                    'success': True,
-                    'ssh': 'ssh -p ' + result['port22'] + ' root@%s' % host['ip']
+                'success': True,
+                'ssh': 'ssh -p ' + result['port22'] + ' root@%s' % host['ip']
                 })
+
             else: 
                 continue
 
@@ -140,10 +148,10 @@ def createContainer():
                 "name": request.json['containerName'],
                 "username": username
             })
-
             return jsonify({
                 'success': True,
                 'ssh': 'ssh -p ' + container['port22'] + ' root@%s' %serverIp
+            
             })
 
         except Exception as e:
@@ -301,6 +309,16 @@ def registerHoster():
                 "success": False,
                 "msg": "Something went wrong"
             })
+
+@app.route('/createDatabase', methods=['POST'])
+@jwt_required
+def createDatabase():
+    username = get_jwt_identity()
+    userCollection = mongo.db.users
+    password = userCollection.find_one({'username': username})['password']
+    databaseName = request.json['databaseName']
+    return jsonify(createUser(username, password, databaseName))
+    
 
 
 

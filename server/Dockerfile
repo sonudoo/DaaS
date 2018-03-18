@@ -3,7 +3,7 @@
     RUN apt-get update -y
     RUN apt-get upgrade -y
     RUN apt-get install -y openssh-server
-    RUN apt-get install nodejs -y
+    RUN apt-get install python3 -y && apt-get install python -y
     RUN mkdir /var/run/sshd
     RUN echo 'root:qwe123' | chpasswd
     RUN sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
