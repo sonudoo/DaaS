@@ -1,6 +1,16 @@
 # DaaS (Docker as a Service)
 
-Our hack, DaaS (Docker as a Service) aims to provide easy computation and storage solutions on a local network. Each user can register and setup multiple containers, based on various images with an easy to use CLI. 
+Our hack, DaaS (Docker as a Service) aims to provide easy computation and storage solutions on a local network. Each user can register and setup multiple containers, based on various images with an easy to use CLI.
+
+## Current Status
+
+* Providing three images with different resource configurations.
+* Completed container creation and manupulation(Start and Stop) services.
+* Set up NGINX server with automatic reverse proxy setup for user containers.
+* Implemented registration as container providers and a distributed container service.
+* Providing service for a central database creation on a common MongoDB server.
+
+### **Tested on a private network on Digital Ocean**
 
 ## Our API:
 
